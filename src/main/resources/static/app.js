@@ -48,6 +48,20 @@ function formatDate(isoDate) {
     });
 }
 
+// Prices are typed into a text field, because number fields on some phones (Safari with a German keyboard)
+// throw away "1,50". Accepts 1,50 / 1.50 / 1 / € 1,50; returns null for anything else.
+function parsePrice(text) {
+    const cleaned = text.replace(/[€\s]/g, "").replace(",", ".");
+    return /^\d+(\.\d{1,2})?$/.test(cleaned) ? Number(cleaned) : null;
+}
+
+// 1.5 -> "1,50" or "1.50", depending on the device's language
+function priceText(price) {
+    return Number(price).toLocaleString(undefined, {
+        minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false,
+    });
+}
+
 function plural(count, word) {
     return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
@@ -184,7 +198,7 @@ function openEditor(item) {
 
     form.elements.type.value = item?.type ?? (filter.type || "SOLD");
     form.elements.name.value = item?.name ?? "";
-    form.elements.price.value = item?.price ?? "";
+    form.elements.price.value = item ? priceText(item.price) : "";
     form.elements.date.value = item?.date ?? new Date().toLocaleDateString("en-CA"); // en-CA = YYYY-MM-DD
     form.elements.place.value = item?.place ?? "";
     form.elements.category.value = item?.category ?? (filter.category || "");
@@ -213,10 +227,15 @@ function showFormError(message) {
 async function save(event) {
     event.preventDefault();
     const fields = $("item-form").elements;
+    const price = parsePrice(fields.price.value);
+    if (price === null) {
+        showFormError("Please enter a price like 1,50 or 12.");
+        return;
+    }
     const body = {
         type: fields.type.value,
         name: fields.name.value,
-        price: fields.price.value === "" ? null : Number(fields.price.value),
+        price,
         date: fields.date.value || null,
         place: fields.place.value,
         category: fields.category.value,
