@@ -13,7 +13,7 @@
     --sold: #1f8a4c;
     --sold-soft: #dcfce7;
     --bought: #d6136f;
-    --bought-strong: #e0157a;
+    --bought-strong: rgb(224 21 122 / 0.75);
     --balance: #b45309;
     --balance-soft: #fff1c7;
     --bad: #c81e5a;
@@ -34,7 +34,7 @@
         --sold: #57D800;
         --sold-soft: #1d3a22;
         --bought: #ff5aa8;
-        --bought-strong: #e0157a;
+        --bought-strong: rgb(224 21 122 / 0.75);
         --balance: #fcd34d;
         --balance-soft: #3d3218;
         --bad: #ff7aa2;
