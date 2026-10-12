@@ -12,6 +12,7 @@
     --shadow: rgb(244 143 177 / 0.18);
     --sold: #1f8a4c;
     --sold-soft: #dcfce7;
+    --sold-stripe: #dcfce7;
     --bought: #d6136f;
     --bought-strong: rgb(224 21 122 / 0.55);
     --balance: #b45309;
@@ -33,6 +34,8 @@
         --shadow: rgb(0 0 0 / 0.25);
         --sold: #57D800;
         --sold-soft: #1d3a22;
+        /* the dark mint would hardly show on the dark item cards */
+        --sold-stripe: #57D800;
         --bought: #ff5aa8;
         --bought-strong: rgb(224 21 122 / 0.55);
         --balance: #fcd34d;
@@ -265,7 +268,7 @@ input:focus, select:focus, textarea:focus {
 
 /* a colored stripe and price, so sold and bought items are told apart at a glance */
 .item.SOLD {
-    border-left-color: var(--sold-soft);
+    border-left-color: var(--sold-stripe);
 }
 
 .item.BOUGHT {
