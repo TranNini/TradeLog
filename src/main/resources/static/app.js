@@ -68,7 +68,7 @@ function plural(count, word) {
 
 function setThumb(node, imageUrl) {
     node.style.backgroundImage = imageUrl ? `url("${imageUrl}")` : "";
-    node.textContent = imageUrl ? "" : "📦";
+    node.textContent = imageUrl ? "" : "🎀";
 }
 
 // A smaller JPEG copy of the picture, or the picture itself when that isn't smaller (or the browser
@@ -145,7 +145,7 @@ function itemRow(item) {
     }
 
     const meta = [item.category, item.place, formatDate(item.date)].filter(Boolean).join(" · ");
-    const row = el("li", {className: "item"},
+    const row = el("li", {className: "item " + item.type},
         thumb,
         el("div", {className: "info"},
             el("div", {className: "name", textContent: item.name}),
