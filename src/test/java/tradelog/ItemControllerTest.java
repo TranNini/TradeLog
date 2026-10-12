@@ -60,7 +60,7 @@ class ItemControllerTest {
 
     private long add(String type, String name, String category, String price) throws Exception {
         String json = """
-                {"type": "%s", "name": "%s", "category": "%s", "price": %s, "place": "Vinted", "date": "2026-10-01"}
+                {"type": "%s", "name": "%s", "category": "%s", "price": %s, "place": "Vinted", "date": "2026-10"}
                 """.formatted(type, name, category, price);
         String response = mvc.perform(post("/api/items").contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated())
@@ -167,7 +167,7 @@ class ItemControllerTest {
         mvc.perform(get("/api/items"))
                 .andExpect(jsonPath("$.items[0].name").value("Shoes"))
                 .andExpect(jsonPath("$.items[0].price").value(12.50))
-                .andExpect(jsonPath("$.items[0].date").value("2026-10-01"))
+                .andExpect(jsonPath("$.items[0].date").value("2026-10")) // the day is dropped
                 .andExpect(jsonPath("$.items[0].imageUrl").value(endsWith("shoes.jpg")));
         // new items get a new id and may have no date
         long id = add("BOUGHT", "Bag", "Bags", "8");

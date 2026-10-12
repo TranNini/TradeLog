@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,14 +45,14 @@ public class ItemController {
         this.images = images;
     }
 
-    // date may be left out (null): the item then has no date
+    // date is a month and year like "2026-10"; it may be left out (null): the item then has no date
     record ItemRequest(ItemType type, String name, String category, BigDecimal price, String place,
-                       LocalDate date, String notes) {
+                       YearMonth date, String notes) {
     }
 
     // imageUrl is null when the item has no picture
     record ItemDto(long id, ItemType type, String name, String category, BigDecimal price, String place,
-                   LocalDate date, String notes, String imageUrl) {
+                   YearMonth date, String notes, String imageUrl) {
         static ItemDto of(Item item) {
             // the file name in the URL makes browsers load a replaced picture again
             String imageUrl = item.image() == null ? null

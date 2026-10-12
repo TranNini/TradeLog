@@ -23,6 +23,12 @@ public class SchemaMigration implements ApplicationRunner {
         if (dateIsRequired()) {
             makeDateOptional();
         }
+        dropDays();
+    }
+
+    // Until 2026-10-12 dates had a day (2026-10-12); now they are only a month and year (2026-10)
+    private void dropDays() {
+        jdbc.sql("UPDATE items SET date = substr(date, 1, 7) WHERE length(date) > 7").update();
     }
 
     // Until 2026-10-12 every item needed a date (date TEXT NOT NULL)

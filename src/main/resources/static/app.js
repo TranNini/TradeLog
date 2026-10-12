@@ -42,10 +42,10 @@ async function api(method, url, body) {
     return data;
 }
 
-function formatDate(isoDate) {
-    return new Date(isoDate + "T00:00").toLocaleDateString(undefined, {
-        day: "numeric", month: "short", year: "numeric",
-    });
+// "2026-10" -> "Oct 2026"
+function formatMonth(yearMonth) {
+    const [year, month] = yearMonth.split("-").map(Number);
+    return new Date(year, month - 1).toLocaleDateString(undefined, {month: "short", year: "numeric"});
 }
 
 // Prices are typed into a text field, because number fields on some phones (Safari with a German keyboard)
@@ -144,7 +144,7 @@ function itemRow(item) {
         });
     }
 
-    const meta = [item.category, item.place, item.date && formatDate(item.date)].filter(Boolean).join(" · ");
+    const meta = [item.category, item.place, item.date && formatMonth(item.date)].filter(Boolean).join(" · ");
     const row = el("li", {className: "item " + item.type},
         thumb,
         el("div", {className: "info"},
@@ -199,7 +199,7 @@ function openEditor(item) {
     form.elements.type.value = item?.type ?? (filter.type || "SOLD");
     form.elements.name.value = item?.name ?? "";
     form.elements.price.value = item ? priceText(item.price) : "";
-    form.elements.date.value = item?.date ?? ""; // stays empty unless a date is picked
+    form.elements.date.value = item?.date ?? ""; // stays empty unless a month is picked
     form.elements.place.value = item?.place ?? "";
     form.elements.category.value = item?.category ?? (filter.category || "");
     form.elements.notes.value = item?.notes ?? "";

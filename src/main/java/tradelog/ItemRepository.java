@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,7 +87,7 @@ public class ItemRepository {
                 row.getString("category"),
                 BigDecimal.valueOf(row.getLong("price_cents"), 2),
                 row.getString("place"),
-                row.getString("date") == null ? null : LocalDate.parse(row.getString("date")),
+                row.getString("date") == null ? null : YearMonth.parse(row.getString("date")),
                 row.getString("notes"),
                 row.getString("image"));
     }
