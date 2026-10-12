@@ -61,6 +61,12 @@ button, input, select, textarea, .button {
     color: inherit;
 }
 
+/* Safari on the iPhone zooms in when a field with text smaller than 16px is tapped (and doesn't zoom back
+   out), e.g. the form fields inside the smaller labels. At 16px it doesn't; pinch-zooming still works. */
+input, select, textarea {
+    font-size: max(16px, 1em);
+}
+
 button, .button {
     background: var(--card);
     border: 1px solid var(--border);
