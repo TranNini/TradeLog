@@ -27,6 +27,7 @@ import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -82,19 +83,22 @@ public class ItemController {
         }
     }
 
-    // type = null for sold and bought; category = "" for all; q = search text, "" for no search.
+    // type = null for sold and bought; category = "" for all; q = search text, "" for no search;
+    // sort = newest, oldest, price-desc or price-asc.
     // The totals add up the items in the category and search, whatever the type, so both sums
     // stay visible when only sold or only bought items are listed.
     @GetMapping("/items")
     public ItemList list(@RequestParam(required = false) ItemType type,
                          @RequestParam(defaultValue = "") String category,
-                         @RequestParam(defaultValue = "") String q) {
+                         @RequestParam(defaultValue = "") String q,
+                         @RequestParam(defaultValue = "newest") String sort) {
         List<Item> matching = items.findAll().stream()
                 .filter(item -> category.isBlank() || category.equalsIgnoreCase(item.category()))
                 .filter(item -> matches(item, q))
                 .toList();
         List<ItemDto> shown = matching.stream()
                 .filter(item -> type == null || item.type() == type)
+                .sorted(order(sort))
                 .map(ItemDto::of)
                 .toList();
         return new ItemList(shown, totals(matching));
@@ -217,6 +221,19 @@ public class ItemController {
             if (field != null && field.toLowerCase(Locale.ROOT).contains(q)) return true;
         }
         return false;
+    }
+
+    // Items without a month always come last; same month or price: the newest added first
+    private static Comparator<Item> order(String sort) {
+        Comparator<Item> newest = Comparator.comparing(Item::date, Comparator.nullsLast(Comparator.<YearMonth>reverseOrder()))
+                .thenComparing(Item::id, Comparator.reverseOrder());
+        return switch (sort) {
+            case "oldest" -> Comparator.comparing(Item::date, Comparator.nullsLast(Comparator.<YearMonth>naturalOrder()))
+                    .thenComparing(Item::id);
+            case "price-desc" -> Comparator.comparing(Item::price, Comparator.<BigDecimal>reverseOrder()).thenComparing(newest);
+            case "price-asc" -> Comparator.comparing(Item::price).thenComparing(newest);
+            default -> newest;
+        };
     }
 
     private static Totals totals(List<Item> items) {

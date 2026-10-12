@@ -463,9 +463,13 @@ dialog h2 {
         font-size: 1.2rem;
     }
 
-    /* type and category on one line, the search bar below */
-    .filters input[type=search] {
+    /* sold / bought on the first line, category and sort on the second, the search bar below */
+    .filters .segmented, .filters input[type=search] {
         flex-basis: 100%;
+    }
+
+    .filters .segmented button {
+        flex: 1;
     }
 
     .filters select {

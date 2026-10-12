@@ -7,7 +7,7 @@ const money = new Intl.NumberFormat(undefined, {style: "currency", currency: "EU
 const MAX_PICTURE_PIXELS = 1600;
 const SUPPORTED_PICTURES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-let filter = {type: "", category: "", q: ""};
+let filter = {type: "", category: "", q: "", sort: "newest"};
 let options = {categories: [], places: []}; // what was entered before, offered in the editor's dropdowns
 let editing = null; // the item open in the editor, or null when adding a new one
 let pendingPicture = null; // picture chosen in the editor, uploaded on save
@@ -102,6 +102,7 @@ async function loadItems() {
     if (filter.type) params.set("type", filter.type);
     if (filter.category) params.set("category", filter.category);
     if (filter.q) params.set("q", filter.q);
+    if (filter.sort !== "newest") params.set("sort", filter.sort);
     const {items, totals} = await api("GET", "/api/items?" + params);
     showTotals(totals);
     showItems(items);
@@ -308,6 +309,11 @@ $("type-filter").addEventListener("click", (event) => {
 
 $("category-filter").addEventListener("change", (event) => {
     filter.category = event.target.value;
+    loadItems().catch((error) => alert(error.message));
+});
+
+$("sort").addEventListener("change", (event) => {
+    filter.sort = event.target.value;
     loadItems().catch((error) => alert(error.message));
 });
 

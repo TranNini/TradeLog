@@ -105,6 +105,25 @@ class ItemControllerTest {
     }
 
     @Test
+    void sortsByPrice() throws Exception {
+        add("SOLD", "Jacket", "Clothes", "45.50");
+        add("BOUGHT", "Lamp", "Home", "8");
+        add("SOLD", "Headphones", "Electronics", "60");
+
+        mvc.perform(get("/api/items").param("sort", "price-desc"))
+                .andExpect(jsonPath("$.items[0].name").value("Headphones"))
+                .andExpect(jsonPath("$.items[2].name").value("Lamp"));
+        mvc.perform(get("/api/items").param("sort", "price-asc").param("type", "SOLD"))
+                .andExpect(jsonPath("$.items", hasSize(2)))
+                .andExpect(jsonPath("$.items[0].name").value("Jacket"));
+        // same month: newest added first
+        mvc.perform(get("/api/items"))
+                .andExpect(jsonPath("$.items[0].name").value("Headphones"));
+        mvc.perform(get("/api/items").param("sort", "oldest"))
+                .andExpect(jsonPath("$.items[0].name").value("Jacket"));
+    }
+
+    @Test
     void updatesAndDeletesItems() throws Exception {
         long id = add("SOLD", "Lamp", "Home", "12");
 
