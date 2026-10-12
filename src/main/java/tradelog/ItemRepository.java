@@ -21,7 +21,7 @@ public class ItemRepository {
         this.jdbc = jdbc;
     }
 
-    // Newest first
+    // Newest first; items without a date last
     public List<Item> findAll() {
         return jdbc.sql("SELECT * FROM items ORDER BY date DESC, id DESC")
                 .query(ItemRepository::map)
@@ -74,7 +74,7 @@ public class ItemRepository {
                 .param("category", item.category())
                 .param("priceCents", item.price().movePointRight(2).longValueExact())
                 .param("place", item.place())
-                .param("date", item.date().toString())
+                .param("date", item.date() == null ? null : item.date().toString())
                 .param("notes", item.notes())
                 .param("image", item.image());
     }
@@ -87,7 +87,7 @@ public class ItemRepository {
                 row.getString("category"),
                 BigDecimal.valueOf(row.getLong("price_cents"), 2),
                 row.getString("place"),
-                LocalDate.parse(row.getString("date")),
+                row.getString("date") == null ? null : LocalDate.parse(row.getString("date")),
                 row.getString("notes"),
                 row.getString("image"));
     }

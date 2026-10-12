@@ -144,7 +144,7 @@ function itemRow(item) {
         });
     }
 
-    const meta = [item.category, item.place, formatDate(item.date)].filter(Boolean).join(" · ");
+    const meta = [item.category, item.place, item.date && formatDate(item.date)].filter(Boolean).join(" · ");
     const row = el("li", {className: "item " + item.type},
         thumb,
         el("div", {className: "info"},
@@ -199,7 +199,7 @@ function openEditor(item) {
     form.elements.type.value = item?.type ?? (filter.type || "SOLD");
     form.elements.name.value = item?.name ?? "";
     form.elements.price.value = item ? priceText(item.price) : "";
-    form.elements.date.value = item?.date ?? new Date().toLocaleDateString("en-CA"); // en-CA = YYYY-MM-DD
+    form.elements.date.value = item?.date ?? ""; // stays empty unless a date is picked
     form.elements.place.value = item?.place ?? "";
     form.elements.category.value = item?.category ?? (filter.category || "");
     form.elements.notes.value = item?.notes ?? "";

@@ -30,7 +30,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeSet;
 
 @RestController
@@ -46,7 +45,7 @@ public class ItemController {
         this.images = images;
     }
 
-    // date may be left out for today
+    // date may be left out (null): the item then has no date
     record ItemRequest(ItemType type, String name, String category, BigDecimal price, String place,
                        LocalDate date, String notes) {
     }
@@ -202,9 +201,8 @@ public class ItemController {
         if (price.compareTo(MAX_PRICE) > 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "That price is too high.");
         }
-        LocalDate date = Objects.requireNonNullElseGet(request.date(), LocalDate::now);
         return new Item(id, request.type(), name, clean(request.category()), price.setScale(2, RoundingMode.HALF_UP),
-                clean(request.place()), date, clean(request.notes()), image);
+                clean(request.place()), request.date(), clean(request.notes()), image);
     }
 
     // Trimmed, or null when empty
