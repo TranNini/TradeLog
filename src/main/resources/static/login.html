@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TradeLog">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>TradeLog</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+    <h1>TradeLog</h1>
+</header>
+<main>
+    <form class="login" method="post" action="/login" autocomplete="off">
+        <h2>Access code</h2>
+        <p class="muted">Enter your TradeLog access code. You only need to do this once on this device.</p>
+        <p id="wrong" class="error" hidden>That code didn't work. Please check it and try again.</p>
+        <input id="code" name="code" type="text" aria-label="Code" autocapitalize="off" autocorrect="off"
+               spellcheck="false" autofocus>
+        <button type="submit" class="primary">Continue</button>
+    </form>
+</main>
+<script>
+    document.getElementById("wrong").hidden = !location.search.includes("wrong");
+</script>
+</body>
+</html>

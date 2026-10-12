@@ -1,0 +1,84 @@
+package tradelog;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+
+// The code every device (the iPhone, other browsers) has to enter once. It is created on first start
+// and kept in access-code.txt, so it stays the same between restarts.
+@Component
+public class AccessCode {
+    // No 0/o, 1/l/i, so it's easy to read off the screen and type on a phone
+    private static final String ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+    private static final int LENGTH = 8;
+    private static final int MAX_FAILURES = 10;
+    private static final long LOCK_MILLIS = 10 * 60 * 1000;
+
+    private final String code;
+    private int failures = 0;
+    private long lockedUntil = 0;
+
+    public AccessCode(@Value("${tradelog.access-code-file}") String file) {
+        this.code = loadOrCreate(Paths.get(file));
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public boolean matches(String candidate) {
+        if (candidate == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                candidate.trim().toLowerCase().getBytes(StandardCharsets.UTF_8),
+                code.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Like matches, but stops accepting codes for 10 minutes after 10 wrong ones,
+    // so nobody on the network can just try them all
+    public synchronized boolean tryLogin(String candidate) {
+        long now = System.currentTimeMillis();
+        if (now < lockedUntil) {
+            return false;
+        }
+        if (matches(candidate)) {
+            failures = 0;
+            return true;
+        }
+        failures++;
+        if (failures >= MAX_FAILURES) {
+            failures = 0;
+            lockedUntil = now + LOCK_MILLIS;
+        }
+        return false;
+    }
+
+    private static String loadOrCreate(Path path) {
+        try {
+            if (Files.exists(path)) {
+                String saved = Files.readString(path).trim().toLowerCase();
+                if (!saved.isEmpty()) {
+                    return saved;
+                }
+            }
+            SecureRandom random = new SecureRandom();
+            StringBuilder newCode = new StringBuilder();
+            for (int i = 0; i < LENGTH; i++) {
+                newCode.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
+            }
+            Files.writeString(path, newCode + System.lineSeparator());
+            return newCode.toString();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not read or create the access code file " + path, e);
+        }
+    }
+}

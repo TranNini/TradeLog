@@ -2,6 +2,10 @@
 // this file only shows the screens and talks to /api.
 
 const money = new Intl.NumberFormat(undefined, {style: "currency", currency: "EUR"});
+// Phone photos are often several MB; they are made at most this many pixels wide and high before
+// uploading, so they upload quickly over mobile data and take less space on the NAS
+const MAX_PICTURE_PIXELS = 1600;
+const SUPPORTED_PICTURES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 let filter = {type: "", category: "", q: ""};
 let editing = null; // the item open in the editor, or null when adding a new one
@@ -26,6 +30,11 @@ async function api(method, url, body) {
         headers: body && !isForm ? {"Content-Type": "application/json"} : {},
         body: isForm ? body : body ? JSON.stringify(body) : undefined,
     });
+    if (response.status === 401) {
+        // this device hasn't entered the access code yet
+        location.href = "/login.html";
+        throw new Error("Please enter the access code.");
+    }
     const data = response.status === 204 ? null : await response.json().catch(() => null);
     if (!response.ok) {
         throw new Error(data?.error || "Something went wrong.");
@@ -46,6 +55,29 @@ function plural(count, word) {
 function setThumb(node, imageUrl) {
     node.style.backgroundImage = imageUrl ? `url("${imageUrl}")` : "";
     node.textContent = imageUrl ? "" : "📦";
+}
+
+// A smaller JPEG copy of the picture, or the picture itself when that isn't smaller (or the browser
+// can't read it; then the server says whether the type is OK)
+async function shrinkPicture(file) {
+    if (file.type === "image/gif") return file; // would lose the animation
+    try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, MAX_PICTURE_PIXELS / Math.max(bitmap.width, bitmap.height));
+        const canvas = el("canvas", {
+            width: Math.round(bitmap.width * scale),
+            height: Math.round(bitmap.height * scale),
+        });
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#ffffff"; // JPEG has no transparency
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const jpeg = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+        if (jpeg && (jpeg.size < file.size || !SUPPORTED_PICTURES.includes(file.type))) return jpeg;
+    } catch (error) {
+        // e.g. a HEIC photo on a browser that can't show it
+    }
+    return file;
 }
 
 // ---------- list ----------
@@ -197,8 +229,9 @@ async function save(event) {
         editing = item; // if the picture upload fails, saving again updates this item instead of adding another
 
         if (pendingPicture) {
+            const picture = await shrinkPicture(pendingPicture);
             const data = new FormData();
-            data.append("file", pendingPicture);
+            data.append("file", picture, picture === pendingPicture ? pendingPicture.name : "picture.jpg");
             await api("POST", `/api/items/${item.id}/image`, data);
         } else if (removePicture && item.imageUrl) {
             await api("DELETE", `/api/items/${item.id}/image`);

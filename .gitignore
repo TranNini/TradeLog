@@ -15,3 +15,9 @@ target/
 ### App data: the database and the pictures ###
 tradelog.db
 images/
+
+### Web app access code ###
+access-code.txt
+
+### Notes for Claude, kept only locally ###
+CLAUDE.md

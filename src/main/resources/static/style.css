@@ -38,6 +38,8 @@ body {
     background: var(--bg);
     color: var(--text);
     font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    /* room for the iPhone's home bar when opened from the home screen */
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 button, input, select, textarea, .button {
@@ -86,7 +88,8 @@ input, select, textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 20px;
+    /* below the iPhone's notch / status bar */
+    padding-top: calc(20px + env(safe-area-inset-top));
     padding-bottom: 12px;
 }
 
@@ -288,6 +291,9 @@ dialog {
     color: var(--text);
     padding: 20px;
     width: min(480px, calc(100vw - 32px));
+    /* the form scrolls on small phones */
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
 }
 
 dialog::backdrop {
@@ -349,6 +355,24 @@ dialog h2 {
     flex: 1;
 }
 
+/* ---------- login ---------- */
+
+.login {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 420px;
+    margin: 24px auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+}
+
+.login h2, .login p {
+    margin: 0;
+}
+
 #viewer {
     width: auto;
     max-width: calc(100vw - 32px);
@@ -379,5 +403,15 @@ dialog h2 {
 
     .total strong {
         font-size: 1.2rem;
+    }
+
+    /* type and category on one line, the search bar below */
+    .filters input[type=search] {
+        flex-basis: 100%;
+    }
+
+    .filters select {
+        flex: 1;
+        max-width: none;
     }
 }
