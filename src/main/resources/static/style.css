@@ -1,0 +1,383 @@
+:root {
+    --bg: #f4f2ee;
+    --card: #ffffff;
+    --text: #1f1d1a;
+    --muted: #716c64;
+    --border: #e2ddd5;
+    --accent: #c2410c;
+    --accent-text: #ffffff;
+    --sold: #15803d;
+    --bought: #1d4ed8;
+    --bad: #b91c1c;
+    --soft: #f7ede6;
+    --radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #161514;
+        --card: #222120;
+        --text: #f1eee9;
+        --muted: #a39e96;
+        --border: #3a3836;
+        --accent: #f97316;
+        --accent-text: #1a1008;
+        --sold: #4ade80;
+        --bought: #93c5fd;
+        --bad: #f87171;
+        --soft: #33261d;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button, input, select, textarea, .button {
+    font: inherit;
+    color: inherit;
+}
+
+button, .button {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+}
+
+button.danger {
+    color: var(--bad);
+}
+
+input, select, textarea {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.top, main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 20px;
+    padding-bottom: 12px;
+}
+
+.top h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+/* ---------- totals ---------- */
+
+.totals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.total {
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    min-width: 0;
+}
+
+.total .label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.total strong {
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.total.sold strong {
+    color: var(--sold);
+}
+
+.total.bought strong {
+    color: var(--bought);
+}
+
+.total .muted {
+    font-size: 0.85rem;
+}
+
+.scope {
+    margin: 8px 2px 0;
+    font-size: 0.9rem;
+}
+
+/* ---------- filters ---------- */
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 12px;
+}
+
+.filters select {
+    width: auto;
+    max-width: 220px;
+}
+
+.filters input[type=search] {
+    flex: 1;
+    min-width: 180px;
+}
+
+.segmented {
+    display: inline-flex;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.segmented button, .segmented label {
+    border: none;
+    border-radius: 7px;
+    padding: 5px 12px;
+    background: none;
+    cursor: pointer;
+}
+
+.segmented button.active, .segmented label:has(input:checked) {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+}
+
+.segmented label input {
+    display: none;
+}
+
+/* ---------- item list ---------- */
+
+.items {
+    list-style: none;
+    margin: 0 0 40px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    cursor: pointer;
+}
+
+.item:hover {
+    border-color: var(--muted);
+}
+
+.thumb {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    background: var(--soft) center / cover no-repeat;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font-size: 1.6rem;
+}
+
+.thumb.large {
+    width: 120px;
+    height: 120px;
+}
+
+.item .info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item .name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item .meta {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.item .price {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.badge {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge.SOLD {
+    color: var(--sold);
+}
+
+.badge.BOUGHT {
+    color: var(--bought);
+}
+
+.empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 0;
+}
+
+/* ---------- dialogs ---------- */
+
+dialog {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--text);
+    padding: 20px;
+    width: min(480px, calc(100vw - 32px));
+}
+
+dialog::backdrop {
+    background: rgb(0 0 0 / 0.45);
+}
+
+dialog h2 {
+    margin: 0 0 12px;
+    font-size: 1.2rem;
+}
+
+#item-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#item-form > label, .row label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+#item-form input, #item-form textarea {
+    color: var(--text);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.picture {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.picture-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.error {
+    color: var(--bad);
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+.spacer {
+    flex: 1;
+}
+
+#viewer {
+    width: auto;
+    max-width: calc(100vw - 32px);
+    padding: 0;
+    cursor: zoom-out;
+}
+
+#viewer img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 64px);
+}
+
+@media (max-width: 560px) {
+    .totals {
+        grid-template-columns: 1fr;
+    }
+
+    .total {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .total .label {
+        width: 70px;
+    }
+
+    .total strong {
+        font-size: 1.2rem;
+    }
+}
