@@ -10,6 +10,7 @@ const SUPPORTED_PICTURES = ["image/jpeg", "image/png", "image/gif", "image/webp"
 let filter = {type: "", category: "", q: "", sort: "newest"};
 let options = {categories: [], places: []}; // what was entered before, offered in the editor's dropdowns
 let editing = null; // the item open in the editor, or null when adding a new one
+let adding = false; // the editor was opened with "Add item" (stays true if saving needs a second try)
 let pendingPicture = null; // picture chosen in the editor, uploaded on save
 let removePicture = false;
 
@@ -209,6 +210,7 @@ function choiceChanged(select, input) {
 
 function openEditor(item) {
     editing = item;
+    adding = !item;
     pendingPicture = null;
     removePicture = false;
 
@@ -280,6 +282,7 @@ async function save(event) {
         }
         $("editor").close();
         await refresh();
+        if (adding) window.scrollTo({top: 0, behavior: "smooth"}); // back to the totals, which now include it
     } catch (error) {
         showFormError(error.message);
     }
