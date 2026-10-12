@@ -265,7 +265,7 @@ input:focus, select:focus, textarea:focus {
 
 /* a colored stripe and price, so sold and bought items are told apart at a glance */
 .item.SOLD {
-    border-left-color: var(--sold);
+    border-left-color: var(--sold-soft);
 }
 
 .item.BOUGHT {

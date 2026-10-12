@@ -75,10 +75,12 @@
             </label>
         </div>
         <label><span id="place-label">Where sold</span>
-            <input name="place" list="places" placeholder="e.g. eBay, Vinted, flea market" autocomplete="off">
+            <select id="place-choice"></select>
+            <input name="place" placeholder="New place, e.g. Vinted, flea market" autocomplete="off" hidden>
         </label>
         <label>Category
-            <input name="category" list="categories" placeholder="e.g. Clothes, Electronics" autocomplete="off">
+            <select id="category-choice"></select>
+            <input name="category" placeholder="New category, e.g. Clothes" autocomplete="off" hidden>
         </label>
         <label>Notes
             <textarea name="notes" rows="2"></textarea>
@@ -109,8 +111,6 @@
     <img id="viewer-image" alt="">
 </dialog>
 
-<datalist id="categories"></datalist>
-<datalist id="places"></datalist>
 
 <script src="app.js"></script>
 </body>

@@ -8,6 +8,7 @@ const MAX_PICTURE_PIXELS = 1600;
 const SUPPORTED_PICTURES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 let filter = {type: "", category: "", q: ""};
+let options = {categories: [], places: []}; // what was entered before, offered in the editor's dropdowns
 let editing = null; // the item open in the editor, or null when adding a new one
 let pendingPicture = null; // picture chosen in the editor, uploaded on save
 let removePicture = false;
@@ -157,9 +158,10 @@ function itemRow(item) {
     return row;
 }
 
-// Fills the category filter and the suggestions in the editor
+// Fills the category filter; the editor's dropdowns are filled when it opens
 async function loadOptions() {
-    const {categories, places} = await api("GET", "/api/options");
+    options = await api("GET", "/api/options");
+    const {categories} = options;
 
     if (filter.category && !categories.some((c) => c.toLowerCase() === filter.category.toLowerCase())) {
         filter.category = ""; // its last item was changed or deleted
@@ -168,9 +170,6 @@ async function loadOptions() {
         el("option", {value: "", textContent: "All categories"}),
         ...categories.map((c) => el("option", {value: c, textContent: c})));
     $("category-filter").value = filter.category;
-
-    $("categories").replaceChildren(...categories.map((c) => el("option", {value: c})));
-    $("places").replaceChildren(...places.map((p) => el("option", {value: p})));
 }
 
 async function refresh() {
@@ -184,6 +183,27 @@ async function refresh() {
 }
 
 // ---------- editor ----------
+
+const NEW_CHOICE = "__new__";
+
+// A dropdown with the values entered before, "none" and "＋ New…". Picking "＋ New…" shows the text field
+// next to it, which is what gets saved; picking anything else copies that into the text field.
+function fillChoice(select, input, values, current, newLabel) {
+    select.replaceChildren(
+        el("option", {value: "", textContent: "— none —"}),
+        ...values.map((v) => el("option", {value: v, textContent: v})),
+        el("option", {value: NEW_CHOICE, textContent: newLabel}));
+    select.value = current ?? "";
+    input.value = current ?? "";
+    input.hidden = true;
+}
+
+function choiceChanged(select, input) {
+    const isNew = select.value === NEW_CHOICE;
+    input.hidden = !isNew;
+    input.value = isNew ? "" : select.value;
+    if (isNew) input.focus();
+}
 
 function openEditor(item) {
     editing = item;
@@ -200,8 +220,9 @@ function openEditor(item) {
     form.elements.name.value = item?.name ?? "";
     form.elements.price.value = item ? priceText(item.price) : "";
     form.elements.date.value = item?.date ?? ""; // stays empty unless a month is picked
-    form.elements.place.value = item?.place ?? "";
-    form.elements.category.value = item?.category ?? (filter.category || "");
+    fillChoice($("place-choice"), form.elements.place, options.places, item?.place, "＋ New place…");
+    fillChoice($("category-choice"), form.elements.category, options.categories,
+        item ? item.category : (filter.category || null), "＋ New category…");
     form.elements.notes.value = item?.notes ?? "";
     updatePlaceLabel();
     showPreview(item?.imageUrl);
@@ -304,6 +325,9 @@ $("item-form").addEventListener("change", (event) => {
     if (event.target.name === "type") updatePlaceLabel();
 });
 $("cancel").addEventListener("click", () => $("editor").close());
+$("place-choice").addEventListener("change", () => choiceChanged($("place-choice"), $("item-form").elements.place));
+$("category-choice").addEventListener("change",
+    () => choiceChanged($("category-choice"), $("item-form").elements.category));
 $("delete").addEventListener("click", deleteItem);
 
 $("picture").addEventListener("change", (event) => {
