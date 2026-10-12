@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 @RestController
@@ -74,6 +75,12 @@ public class ItemController {
     record Options(List<String> categories, List<String> places) {
     }
 
+    record Category(String name, int count) {
+    }
+
+    record CategoryRename(String from, String to) {
+    }
+
     static class ApiException extends RuntimeException {
         final HttpStatus status;
 
@@ -113,6 +120,41 @@ public class ItemController {
             if (item.place() != null) places.add(item.place());
         }
         return new Options(List.copyOf(categories), List.copyOf(places));
+    }
+
+    // Every category with how many items it has; categories only exist through their items
+    @GetMapping("/categories")
+    public List<Category> categories() {
+        TreeMap<String, Integer> counts = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Item item : items.findAll()) {
+            if (item.category() != null) counts.merge(item.category(), 1, Integer::sum);
+        }
+        return counts.entrySet().stream().map(e -> new Category(e.getKey(), e.getValue())).toList();
+    }
+
+    // Renaming to a category that already exists puts both into one
+    @PutMapping("/categories")
+    public Category renameCategory(@RequestBody CategoryRename request) {
+        String from = clean(request.from());
+        String to = clean(request.to());
+        if (from == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Please choose a category.");
+        }
+        if (to == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Please enter the new name.");
+        }
+        int changed = items.changeCategory(from, to);
+        if (changed == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "This category doesn't exist (anymore).");
+        }
+        return new Category(to, changed);
+    }
+
+    // The items stay, they just have no category anymore
+    @DeleteMapping("/categories")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCategory(@RequestParam String name) {
+        items.changeCategory(name.strip(), null);
     }
 
     @PostMapping("/items")

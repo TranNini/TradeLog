@@ -63,6 +63,15 @@ public class ItemRepository {
                 .update();
     }
 
+    // Gives every item in category "from" (any upper/lower case) the category "to" (null: no category);
+    // returns how many items were changed
+    public int changeCategory(String from, String to) {
+        return jdbc.sql("UPDATE items SET category = :to WHERE category = :from COLLATE NOCASE")
+                .param("to", to)
+                .param("from", from)
+                .update();
+    }
+
     public void delete(long id) {
         jdbc.sql("DELETE FROM items WHERE id = :id").param("id", id).update();
     }

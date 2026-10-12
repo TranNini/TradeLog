@@ -169,7 +169,8 @@ async function loadOptions() {
     }
     $("category-filter").replaceChildren(
         el("option", {value: "", textContent: "All categories"}),
-        ...categories.map((c) => el("option", {value: c, textContent: c})));
+        ...categories.map((c) => el("option", {value: c, textContent: c})),
+        el("option", {value: EDIT_CATEGORIES, textContent: "✎ Edit categories…"}));
     $("category-filter").value = filter.category;
 }
 
@@ -295,6 +296,67 @@ async function deleteItem() {
     }
 }
 
+// ---------- categories ----------
+
+const EDIT_CATEGORIES = "__edit__";
+
+async function openCategories() {
+    $("categories-error").hidden = true;
+    await showCategories();
+    $("categories").showModal();
+}
+
+async function showCategories() {
+    const categories = await api("GET", "/api/categories");
+    $("category-list").replaceChildren(...categories.map(categoryRow));
+    $("categories-empty").hidden = categories.length > 0;
+}
+
+function categoryRow(category) {
+    const input = el("input", {value: category.name, autocomplete: "off", ariaLabel: "Name"});
+    const rename = el("button", {type: "button", textContent: "Rename", hidden: true});
+    const remove = el("button", {type: "button", className: "danger", textContent: "Delete"});
+    input.addEventListener("input", () => {
+        rename.hidden = input.value.trim() === "" || input.value.trim() === category.name;
+    });
+    input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault(); // would close the dialog
+            if (!rename.hidden) rename.click();
+        }
+    });
+    rename.addEventListener("click", () => changeCategory(category, input.value.trim()));
+    remove.addEventListener("click", () => {
+        if (confirm(`Delete the category “${category.name}”? Its ${plural(category.count, "item")} stay, without a category.`)) {
+            changeCategory(category, null);
+        }
+    });
+    return el("li", {},
+        el("div", {className: "category-name"}, input,
+            el("span", {className: "muted", textContent: plural(category.count, "item")})),
+        rename, remove);
+}
+
+// to = null deletes the category
+async function changeCategory(category, to) {
+    try {
+        if (to === null) {
+            await api("DELETE", "/api/categories?" + new URLSearchParams({name: category.name}));
+        } else {
+            await api("PUT", "/api/categories", {from: category.name, to});
+        }
+        if (filter.category.toLowerCase() === category.name.toLowerCase()) {
+            filter.category = to ?? ""; // keep showing the renamed category
+        }
+        $("categories-error").hidden = true;
+        await showCategories();
+        await refresh();
+    } catch (error) {
+        $("categories-error").textContent = error.message;
+        $("categories-error").hidden = false;
+    }
+}
+
 // ---------- events ----------
 
 $("add").addEventListener("click", () => openEditor(null));
@@ -308,6 +370,11 @@ $("type-filter").addEventListener("click", (event) => {
 });
 
 $("category-filter").addEventListener("change", (event) => {
+    if (event.target.value === EDIT_CATEGORIES) {
+        event.target.value = filter.category;
+        openCategories().catch((error) => alert(error.message));
+        return;
+    }
     filter.category = event.target.value;
     loadItems().catch((error) => alert(error.message));
 });

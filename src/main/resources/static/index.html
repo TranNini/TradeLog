@@ -113,6 +113,21 @@
     </form>
 </dialog>
 
+<dialog id="categories">
+    <form method="dialog">
+        <h2>Categories</h2>
+        <p class="muted hint">Renaming changes the category of all its items; using the name of another category
+            puts both together. Deleting only removes the category, the items stay.</p>
+        <ul id="category-list" class="category-list"></ul>
+        <p id="categories-empty" class="muted" hidden>No categories yet. They are added with the items.</p>
+        <p id="categories-error" class="error" hidden></p>
+        <div class="actions">
+            <span class="spacer"></span>
+            <button class="primary">Done</button>
+        </div>
+    </form>
+</dialog>
+
 <dialog id="viewer">
     <img id="viewer-image" alt="">
 </dialog>

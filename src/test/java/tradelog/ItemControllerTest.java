@@ -238,4 +238,43 @@ class ItemControllerTest {
             assertEquals(0, files.count(), "deleting the item deletes its picture");
         }
     }
+
+    @Test
+    void renamesAndDeletesCategories() throws Exception {
+        add("SOLD", "Jacket", "Clothes", "10");
+        add("BOUGHT", "Scarf", "clothes", "5");
+        add("SOLD", "Shoes", "Shoes", "8");
+        add("SOLD", "Lamp", "Home", "12");
+
+        mvc.perform(get("/api/categories"))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].count").value(2)); // Clothes and clothes are one category
+
+        // renaming to an existing category puts both into one
+        mvc.perform(put("/api/categories").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"from": "clothes", "to": "Fashion"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(2));
+        mvc.perform(put("/api/categories").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"from": "Shoes", "to": "Fashion"}
+                                """))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/items").param("category", "Fashion"))
+                .andExpect(jsonPath("$.items", hasSize(3)));
+
+        mvc.perform(put("/api/categories").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"from": "Fashion", "to": " "}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(delete("/api/categories").param("name", "fashion")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/categories"))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("Home"));
+        mvc.perform(get("/api/items")).andExpect(jsonPath("$.items", hasSize(4))); // the items stay
+    }
 }
