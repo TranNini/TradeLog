@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
+import tradelog.ItemRepository.ItemField;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 
 @RestController
 @RequestMapping("/api")
@@ -64,8 +66,9 @@ public class ItemController {
         }
     }
 
-    // balance = sold - bought
-    record Totals(BigDecimal sold, BigDecimal bought, BigDecimal balance, int soldCount, int boughtCount) {
+    // balance = sold - bought; forSale = the asking prices of the items not sold yet, not part of the balance
+    record Totals(BigDecimal sold, BigDecimal bought, BigDecimal balance, int soldCount, int boughtCount,
+                  BigDecimal forSale, int forSaleCount) {
     }
 
     record ItemList(List<ItemDto> items, Totals totals) {
@@ -75,10 +78,11 @@ public class ItemController {
     record Options(List<String> categories, List<String> places) {
     }
 
-    record Category(String name, int count) {
+    // a category or place, and how many items have it
+    record Choice(String name, int count) {
     }
 
-    record CategoryRename(String from, String to) {
+    record Rename(String from, String to) {
     }
 
     static class ApiException extends RuntimeException {
@@ -122,39 +126,40 @@ public class ItemController {
         return new Options(List.copyOf(categories), List.copyOf(places));
     }
 
-    // Every category with how many items it has; categories only exist through their items
+    // Every category with how many items it has; categories (and places) only exist through their items
     @GetMapping("/categories")
-    public List<Category> categories() {
-        TreeMap<String, Integer> counts = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Item item : items.findAll()) {
-            if (item.category() != null) counts.merge(item.category(), 1, Integer::sum);
-        }
-        return counts.entrySet().stream().map(e -> new Category(e.getKey(), e.getValue())).toList();
+    public List<Choice> categories() {
+        return choices(Item::category);
     }
 
     // Renaming to a category that already exists puts both into one
     @PutMapping("/categories")
-    public Category renameCategory(@RequestBody CategoryRename request) {
-        String from = clean(request.from());
-        String to = clean(request.to());
-        if (from == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Please choose a category.");
-        }
-        if (to == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Please enter the new name.");
-        }
-        int changed = items.changeCategory(from, to);
-        if (changed == 0) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "This category doesn't exist (anymore).");
-        }
-        return new Category(to, changed);
+    public Choice renameCategory(@RequestBody Rename request) {
+        return rename(ItemField.CATEGORY, request, "category");
     }
 
     // The items stay, they just have no category anymore
     @DeleteMapping("/categories")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCategory(@RequestParam String name) {
-        items.changeCategory(name.strip(), null);
+        items.rename(ItemField.CATEGORY, name.strip(), null);
+    }
+
+    // Where items were sold, bought or listed; works like the categories
+    @GetMapping("/places")
+    public List<Choice> places() {
+        return choices(Item::place);
+    }
+
+    @PutMapping("/places")
+    public Choice renamePlace(@RequestBody Rename request) {
+        return rename(ItemField.PLACE, request, "place");
+    }
+
+    @DeleteMapping("/places")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePlace(@RequestParam String name) {
+        items.rename(ItemField.PLACE, name.strip(), null);
     }
 
     @PostMapping("/items")
@@ -234,7 +239,7 @@ public class ItemController {
 
     private static Item toItem(Long id, ItemRequest request, String image) {
         if (request.type() == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Please choose sold or bought.");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Please choose sold, bought or for sale.");
         }
         String name = clean(request.name());
         if (name == null) {
@@ -278,20 +283,54 @@ public class ItemController {
         };
     }
 
+    private List<Choice> choices(Function<Item, String> field) {
+        TreeMap<String, Integer> counts = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Item item : items.findAll()) {
+            if (field.apply(item) != null) counts.merge(field.apply(item), 1, Integer::sum);
+        }
+        return counts.entrySet().stream().map(e -> new Choice(e.getKey(), e.getValue())).toList();
+    }
+
+    // what = "category" or "place", for the error messages
+    private Choice rename(ItemField field, Rename request, String what) {
+        String from = clean(request.from());
+        String to = clean(request.to());
+        if (from == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Please choose a " + what + ".");
+        }
+        if (to == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Please enter the new name.");
+        }
+        int changed = items.rename(field, from, to);
+        if (changed == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "This " + what + " doesn't exist (anymore).");
+        }
+        return new Choice(to, changed);
+    }
+
     private static Totals totals(List<Item> items) {
         BigDecimal sold = BigDecimal.ZERO.setScale(2);
         BigDecimal bought = BigDecimal.ZERO.setScale(2);
+        BigDecimal forSale = BigDecimal.ZERO.setScale(2);
         int soldCount = 0;
         int boughtCount = 0;
+        int forSaleCount = 0;
         for (Item item : items) {
-            if (item.type() == ItemType.SOLD) {
-                sold = sold.add(item.price());
-                soldCount++;
-            } else {
-                bought = bought.add(item.price());
-                boughtCount++;
+            switch (item.type()) {
+                case SOLD -> {
+                    sold = sold.add(item.price());
+                    soldCount++;
+                }
+                case BOUGHT -> {
+                    bought = bought.add(item.price());
+                    boughtCount++;
+                }
+                case FOR_SALE -> {
+                    forSale = forSale.add(item.price());
+                    forSaleCount++;
+                }
             }
         }
-        return new Totals(sold, bought, sold.subtract(bought), soldCount, boughtCount);
+        return new Totals(sold, bought, sold.subtract(bought), soldCount, boughtCount, forSale, forSaleCount);
     }
 }

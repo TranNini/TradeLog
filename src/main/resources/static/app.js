@@ -7,6 +7,8 @@ const money = new Intl.NumberFormat(undefined, {style: "currency", currency: "EU
 const MAX_PICTURE_PIXELS = 1600;
 const SUPPORTED_PICTURES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
+const TYPE_NAMES = {SOLD: "Sold", BOUGHT: "Bought", FOR_SALE: "For sale"};
+
 let filter = {type: "", category: "", q: "", sort: "newest"};
 let options = {categories: [], places: []}; // what was entered before, offered in the editor's dropdowns
 let editing = null; // the item open in the editor, or null when adding a new one
@@ -116,6 +118,9 @@ function showTotals(totals) {
     $("bought-sum").textContent = money.format(totals.bought);
     $("bought-count").textContent = plural(totals.boughtCount, "item");
     $("balance").textContent = money.format(totals.balance);
+    $("for-sale-card").hidden = totals.forSaleCount === 0;
+    $("for-sale-sum").textContent = money.format(totals.forSale);
+    $("for-sale-count").textContent = plural(totals.forSaleCount, "item") + " · asking";
 
     const parts = [];
     if (filter.category) parts.push(`in “${filter.category}”`);
@@ -155,7 +160,7 @@ function itemRow(item) {
             el("div", {className: "name", textContent: item.name}),
             el("div", {className: "meta", textContent: meta})),
         el("div", {className: "price"},
-            el("span", {className: "badge " + item.type, textContent: item.type === "SOLD" ? "Sold" : "Bought"}),
+            el("span", {className: "badge " + item.type, textContent: TYPE_NAMES[item.type]}),
             money.format(item.price)));
     row.addEventListener("click", () => openEditor(item));
     return row;
@@ -172,7 +177,7 @@ async function loadOptions() {
     $("category-filter").replaceChildren(
         el("option", {value: "", textContent: "All categories"}),
         ...categories.map((c) => el("option", {value: c, textContent: c})),
-        el("option", {value: EDIT_CATEGORIES, textContent: "✎ Edit categories…"}));
+        el("option", {value: EDIT_CATEGORIES, textContent: "✎ Edit categories & places…"}));
     $("category-filter").value = filter.category;
 }
 
@@ -230,15 +235,28 @@ function openEditor(item) {
     fillChoice($("category-choice"), form.elements.category, options.categories,
         item ? item.category : (filter.category || null), "＋ New category…");
     form.elements.notes.value = item?.notes ?? "";
-    updatePlaceLabel();
+    updateTypeLabels();
     showPreview(item?.imageUrl);
 
     $("editor").showModal();
 }
 
-function updatePlaceLabel() {
-    const sold = $("item-form").elements.type.value === "SOLD";
-    $("place-label").textContent = sold ? "Where sold" : "Where bought";
+function updateTypeLabels() {
+    const type = $("item-form").elements.type.value;
+    $("place-label").textContent = {SOLD: "Where sold", BOUGHT: "Where bought", FOR_SALE: "Where listed"}[type];
+    $("price-label").textContent = type === "FOR_SALE" ? "Asking price (€)" : "Price (€)";
+    $("mark-sold").hidden = !(editing && type === "FOR_SALE");
+}
+
+// An item for sale was sold: it becomes sold this month; the price can still be changed before saving
+function markSold() {
+    const fields = $("item-form").elements;
+    const now = new Date();
+    fields.type.value = "SOLD";
+    fields.date.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    updateTypeLabels();
+    fields.price.focus();
+    fields.price.select();
 }
 
 function showPreview(url) {
@@ -453,9 +471,15 @@ $("photo").addEventListener("close", () => {
     photoDone = null;
 });
 
-// ---------- categories ----------
+// ---------- categories and places ----------
 
 const EDIT_CATEGORIES = "__edit__";
+
+// what = "category" or "place"; url = where they are read, renamed and deleted
+const CHOICE_LISTS = [
+    {what: "category", url: "/api/categories", list: "category-list"},
+    {what: "place", url: "/api/places", list: "place-list"},
+];
 
 async function openCategories() {
     $("categories-error").hidden = true;
@@ -464,17 +488,19 @@ async function openCategories() {
 }
 
 async function showCategories() {
-    const categories = await api("GET", "/api/categories");
-    $("category-list").replaceChildren(...categories.map(categoryRow));
-    $("categories-empty").hidden = categories.length > 0;
+    for (const kind of CHOICE_LISTS) {
+        const choices = await api("GET", kind.url);
+        $(kind.list).replaceChildren(...choices.map((choice) => choiceRow(kind, choice)));
+        $(kind.list + "-empty").hidden = choices.length > 0;
+    }
 }
 
-function categoryRow(category) {
-    const input = el("input", {value: category.name, autocomplete: "off", ariaLabel: "Name"});
+function choiceRow(kind, choice) {
+    const input = el("input", {value: choice.name, autocomplete: "off", ariaLabel: "Name"});
     const rename = el("button", {type: "button", textContent: "Rename", hidden: true});
     const remove = el("button", {type: "button", className: "danger", textContent: "Delete"});
     input.addEventListener("input", () => {
-        rename.hidden = input.value.trim() === "" || input.value.trim() === category.name;
+        rename.hidden = input.value.trim() === "" || input.value.trim() === choice.name;
     });
     input.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
@@ -482,27 +508,27 @@ function categoryRow(category) {
             if (!rename.hidden) rename.click();
         }
     });
-    rename.addEventListener("click", () => changeCategory(category, input.value.trim()));
+    rename.addEventListener("click", () => changeChoice(kind, choice, input.value.trim()));
     remove.addEventListener("click", () => {
-        if (confirm(`Delete the category “${category.name}”? Its ${plural(category.count, "item")} stay, without a category.`)) {
-            changeCategory(category, null);
+        if (confirm(`Delete the ${kind.what} “${choice.name}”? Its ${plural(choice.count, "item")} stay, without a ${kind.what}.`)) {
+            changeChoice(kind, choice, null);
         }
     });
     return el("li", {},
         el("div", {className: "category-name"}, input,
-            el("span", {className: "muted", textContent: plural(category.count, "item")})),
+            el("span", {className: "muted", textContent: plural(choice.count, "item")})),
         rename, remove);
 }
 
-// to = null deletes the category
-async function changeCategory(category, to) {
+// to = null deletes the category or place
+async function changeChoice(kind, choice, to) {
     try {
         if (to === null) {
-            await api("DELETE", "/api/categories?" + new URLSearchParams({name: category.name}));
+            await api("DELETE", kind.url + "?" + new URLSearchParams({name: choice.name}));
         } else {
-            await api("PUT", "/api/categories", {from: category.name, to});
+            await api("PUT", kind.url, {from: choice.name, to});
         }
-        if (filter.category.toLowerCase() === category.name.toLowerCase()) {
+        if (kind.what === "category" && filter.category.toLowerCase() === choice.name.toLowerCase()) {
             filter.category = to ?? ""; // keep showing the renamed category
         }
         $("categories-error").hidden = true;
@@ -552,13 +578,14 @@ $("search").addEventListener("input", (event) => {
 
 $("item-form").addEventListener("submit", save);
 $("item-form").addEventListener("change", (event) => {
-    if (event.target.name === "type") updatePlaceLabel();
+    if (event.target.name === "type") updateTypeLabels();
 });
 $("cancel").addEventListener("click", () => $("editor").close());
 $("place-choice").addEventListener("change", () => choiceChanged($("place-choice"), $("item-form").elements.place));
 $("category-choice").addEventListener("change",
     () => choiceChanged($("category-choice"), $("item-form").elements.category));
 $("delete").addEventListener("click", deleteItem);
+$("mark-sold").addEventListener("click", markSold);
 
 $("picture").addEventListener("change", async (event) => {
     const file = event.target.files[0];

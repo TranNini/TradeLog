@@ -16,6 +16,8 @@
     --bought-strong: rgb(224 21 122 / 0.55);
     --balance: #b45309;
     --balance-soft: #fff1c7;
+    --for-sale: #7c3aed;
+    --for-sale-soft: #ede4ff;
     --bad: #c81e5a;
     --soft: #ffe4ee;
     --radius: 20px;
@@ -37,6 +39,8 @@
         --bought-strong: rgb(224 21 122 / 0.55);
         --balance: #fcd34d;
         --balance-soft: #3d3218;
+        --for-sale: #c4a7ff;
+        --for-sale-soft: #2f2545;
         --bad: #ff7aa2;
         --soft: #3a2630;
     }
@@ -44,6 +48,11 @@
 
 * {
     box-sizing: border-box;
+}
+
+/* also for elements whose class sets display, e.g. the "for sale" total when nothing is for sale */
+[hidden] {
+    display: none !important;
 }
 
 body {
@@ -131,7 +140,8 @@ input:focus, select:focus, textarea:focus {
 
 .totals {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: column; /* 3 cards, or 4 when something is for sale */
+    grid-auto-columns: 1fr;
     gap: 10px;
 }
 
@@ -158,6 +168,12 @@ input:focus, select:focus, textarea:focus {
 .total.balance {
     background: var(--balance-soft);
     color: var(--balance);
+}
+
+/* lavender: money that may still come in */
+.total.for-sale {
+    background: var(--for-sale-soft);
+    color: var(--for-sale);
 }
 
 .total .label {
@@ -237,6 +253,11 @@ input:focus, select:focus, textarea:focus {
     color: #ffffff;
 }
 
+.segmented button.active[data-type=FOR_SALE], .segmented label:has(input[value=FOR_SALE]:checked) {
+    background: var(--for-sale-soft);
+    color: var(--for-sale);
+}
+
 .segmented label input {
     display: none;
 }
@@ -275,6 +296,10 @@ input:focus, select:focus, textarea:focus {
 
 .item.BOUGHT .price {
     color: var(--bought);
+}
+
+.item.FOR_SALE .price {
+    color: var(--for-sale);
 }
 
 .thumb {
@@ -338,6 +363,17 @@ input:focus, select:focus, textarea:focus {
 .badge.BOUGHT {
     background: var(--bought-strong);
     color: #ffffff;
+}
+
+.badge.FOR_SALE {
+    background: var(--for-sale-soft);
+    color: var(--for-sale);
+}
+
+button.sold-button {
+    background: var(--sold-soft);
+    color: var(--sold);
+    font-weight: 600;
 }
 
 .empty {
@@ -498,6 +534,11 @@ dialog h2 {
     font-size: 0.85rem;
 }
 
+#categories h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
 .category-list {
     list-style: none;
     margin: 0 0 12px;
@@ -559,7 +600,7 @@ dialog h2 {
 
 @media (max-width: 560px) {
     .totals {
-        grid-template-columns: 1fr;
+        grid-auto-flow: row;
     }
 
     .total {
@@ -569,7 +610,7 @@ dialog h2 {
     }
 
     .total .label {
-        width: 70px;
+        width: 82px;
     }
 
     .total strong {

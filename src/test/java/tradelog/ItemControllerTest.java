@@ -179,10 +179,12 @@ class ItemControllerTest {
                 VALUES ('SOLD', 'Shoes', 1250, 'Vinted', '2026-10-01', 'shoes.jpg')
                 """).update();
         assertTrue(migration.dateIsRequired());
+        assertFalse(migration.forSaleIsAllowed());
 
         migration.run(null);
 
         assertFalse(migration.dateIsRequired());
+        assertTrue(migration.forSaleIsAllowed());
         mvc.perform(get("/api/items"))
                 .andExpect(jsonPath("$.items[0].name").value("Shoes"))
                 .andExpect(jsonPath("$.items[0].price").value(12.50))
@@ -196,6 +198,59 @@ class ItemControllerTest {
                                 {"type": "SOLD", "name": "Vase", "price": 5}
                                 """))
                 .andExpect(status().isCreated());
+        add("FOR_SALE", "Chair", "Home", "15");
+    }
+
+    @Test
+    void keepsItemsForSaleOutOfTheBalance() throws Exception {
+        add("SOLD", "Jacket", "Clothes", "40");
+        add("BOUGHT", "Scarf", "Clothes", "10");
+        long chair = add("FOR_SALE", "Chair", "Home", "25");
+        add("FOR_SALE", "Table", "Home", "50.50");
+
+        mvc.perform(get("/api/items"))
+                .andExpect(jsonPath("$.items", hasSize(4)))
+                .andExpect(jsonPath("$.totals.balance").value(30.00))
+                .andExpect(jsonPath("$.totals.forSale").value(75.50))
+                .andExpect(jsonPath("$.totals.forSaleCount").value(2));
+        mvc.perform(get("/api/items").param("type", "FOR_SALE"))
+                .andExpect(jsonPath("$.items", hasSize(2)));
+
+        // sold: it moves into the sold sum
+        mvc.perform(put("/api/items/" + chair).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"type": "SOLD", "name": "Chair", "price": 22, "date": "2026-10"}
+                                """))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/items"))
+                .andExpect(jsonPath("$.totals.sold").value(62.00))
+                .andExpect(jsonPath("$.totals.forSaleCount").value(1));
+    }
+
+    @Test
+    void renamesAndDeletesPlaces() throws Exception {
+        add("SOLD", "Jacket", "Clothes", "10"); // all added at "Vinted"
+        jdbc.sql("UPDATE items SET place = 'vinted'").update();
+        add("SOLD", "Lamp", "Home", "12");
+
+        mvc.perform(get("/api/places"))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].count").value(2)); // Vinted and vinted are one place
+        mvc.perform(put("/api/places").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"from": "VINTED", "to": "Vinted.de"}
+                                """))
+                .andExpect(jsonPath("$.count").value(2));
+        mvc.perform(get("/api/places")).andExpect(jsonPath("$[0].name").value("Vinted.de"));
+        mvc.perform(put("/api/places").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"from": "eBay", "to": "Kleinanzeigen"}
+                                """))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(delete("/api/places").param("name", "Vinted.de")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/places")).andExpect(jsonPath("$", hasSize(0)));
+        mvc.perform(get("/api/items")).andExpect(jsonPath("$.items", hasSize(2)));
     }
 
     @Test

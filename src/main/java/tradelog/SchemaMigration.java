@@ -20,8 +20,8 @@ public class SchemaMigration implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (dateIsRequired()) {
-            makeDateOptional();
+        if (dateIsRequired() || !forSaleIsAllowed()) {
+            rebuildTable();
         }
         dropDays();
     }
@@ -39,13 +39,22 @@ public class SchemaMigration implements ApplicationRunner {
                 .orElse(0) == 1;
     }
 
-    // SQLite can't drop NOT NULL from a column, so the table is copied into a new one without it
-    private void makeDateOptional() {
+    // Until 2026-10-13 items could only be SOLD or BOUGHT (CHECK (type IN ('SOLD', 'BOUGHT')))
+    boolean forSaleIsAllowed() {
+        return jdbc.sql("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'items'")
+                .query(String.class)
+                .optional()
+                .map(sql -> sql.contains("'FOR_SALE'"))
+                .orElse(true);
+    }
+
+    // SQLite can't change a column's NOT NULL or CHECK, so the table is copied into a new one as in schema.sql
+    private void rebuildTable() {
         transaction.executeWithoutResult(status -> {
             jdbc.sql("""
                     CREATE TABLE items_new (
                         id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                        type        TEXT    NOT NULL CHECK (type IN ('SOLD', 'BOUGHT')),
+                        type        TEXT    NOT NULL CHECK (type IN ('SOLD', 'BOUGHT', 'FOR_SALE')),
                         name        TEXT    NOT NULL,
                         category    TEXT,
                         price_cents INTEGER NOT NULL,

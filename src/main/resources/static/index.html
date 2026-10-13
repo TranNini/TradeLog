@@ -35,6 +35,11 @@
             <strong id="balance">–</strong>
             <span class="muted">sold − bought</span>
         </div>
+        <div id="for-sale-card" class="total for-sale" hidden>
+            <span class="label">For sale</span>
+            <strong id="for-sale-sum">–</strong>
+            <span id="for-sale-count" class="muted"></span>
+        </div>
     </section>
     <p id="scope" class="scope muted" hidden></p>
 
@@ -43,6 +48,7 @@
             <button data-type="" class="active">All</button>
             <button data-type="SOLD">Sold</button>
             <button data-type="BOUGHT">Bought</button>
+            <button data-type="FOR_SALE">For sale</button>
         </div>
         <select id="category-filter" aria-label="Category">
             <option value="">All categories</option>
@@ -67,7 +73,9 @@
         <div class="segmented type-choice">
             <label><input type="radio" name="type" value="SOLD" checked> Sold</label>
             <label><input type="radio" name="type" value="BOUGHT"> Bought</label>
+            <label><input type="radio" name="type" value="FOR_SALE"> For sale</label>
         </div>
+        <button type="button" id="mark-sold" class="sold-button">✓ Mark as sold</button>
 
         <div class="picture">
             <div id="preview" class="thumb large"></div>
@@ -84,7 +92,7 @@
             <input name="name" required autocomplete="off">
         </label>
         <div class="row">
-            <label>Price (€)
+            <label><span id="price-label">Price (€)</span>
                 <input name="price" type="text" inputmode="decimal" placeholder="e.g. 1,50" autocomplete="off" required>
             </label>
             <label>Month
@@ -141,11 +149,15 @@
 
 <dialog id="categories">
     <form method="dialog">
-        <h2>Categories</h2>
-        <p class="muted hint">Renaming changes the category of all its items; using the name of another category
-            puts both together. Deleting only removes the category, the items stay.</p>
+        <h2>Categories &amp; places</h2>
+        <p class="muted hint">Renaming changes all items with that name; using a name that already exists puts both
+            together. Deleting only removes the name, the items stay.</p>
+        <h3>Categories</h3>
         <ul id="category-list" class="category-list"></ul>
-        <p id="categories-empty" class="muted" hidden>No categories yet. They are added with the items.</p>
+        <p id="category-list-empty" class="muted" hidden>No categories yet. They are added with the items.</p>
+        <h3>Places</h3>
+        <ul id="place-list" class="category-list"></ul>
+        <p id="place-list-empty" class="muted" hidden>No places yet. They are added with the items.</p>
         <p id="categories-error" class="error" hidden></p>
         <div class="actions">
             <span class="spacer"></span>
