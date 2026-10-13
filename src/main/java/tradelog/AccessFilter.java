@@ -20,7 +20,7 @@ public class AccessFilter extends OncePerRequestFilter {
     // What the login page itself needs, plus what iOS fetches for the home screen icon
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/login", "/login.html", "/style.css", "/manifest.webmanifest",
-            "/icon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/favicon.ico");
+            "/favicon.png", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/favicon.ico");
 
     private final AccessCode accessCode;
 

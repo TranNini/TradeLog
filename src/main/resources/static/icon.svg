@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#f48fb1"/>
-  <!-- a price tag -->
-  <path d="M280 100 H396 a16 16 0 0 1 16 16 V232 a16 16 0 0 1 -4.7 11.3 L251 399.6 a16 16 0 0 1 -22.6 0 L112.4 283.6 a16 16 0 0 1 0 -22.6 L268.7 104.7 A16 16 0 0 1 280 100 Z" fill="#ffffff"/>
-  <circle cx="346" cy="166" r="28" fill="#f48fb1"/>
-</svg>
