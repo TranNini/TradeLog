@@ -419,6 +419,78 @@ dialog h2 {
     flex: 1;
 }
 
+/* ---------- picture editor ---------- */
+
+#photo {
+    display: none;
+}
+
+#photo[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#photo h2, #photo .hint {
+    margin: 0;
+}
+
+.photo-stage {
+    display: flex;
+    justify-content: center;
+}
+
+.photo-frame {
+    position: relative;
+    overflow: hidden; /* keeps the darkening around the crop frame inside the picture */
+    touch-action: none; /* dragging moves the crop frame, not the page */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.photo-frame canvas {
+    display: block;
+}
+
+.crop {
+    position: absolute;
+    border: 1px solid rgb(255 255 255 / 0.9);
+    box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.5);
+    cursor: move;
+    touch-action: none;
+}
+
+/* big enough to grab with a finger; the white corner marks are inside, so they're never cut off */
+.handle {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+}
+
+.handle::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 0 solid #fff;
+    filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.6)); /* also visible on white photos */
+}
+
+.handle.nw { left: 0; top: 0; cursor: nwse-resize; }
+.handle.ne { right: 0; top: 0; cursor: nesw-resize; }
+.handle.sw { left: 0; bottom: 0; cursor: nesw-resize; }
+.handle.se { right: 0; bottom: 0; cursor: nwse-resize; }
+.handle.nw::after { left: 0; top: 0; border-top-width: 4px; border-left-width: 4px; }
+.handle.ne::after { right: 0; top: 0; border-top-width: 4px; border-right-width: 4px; }
+.handle.sw::after { left: 0; bottom: 0; border-bottom-width: 4px; border-left-width: 4px; }
+.handle.se::after { right: 0; bottom: 0; border-bottom-width: 4px; border-right-width: 4px; }
+
+.photo-tools {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
 /* ---------- categories ---------- */
 
 .hint {

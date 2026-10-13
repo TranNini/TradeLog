@@ -75,6 +75,7 @@
                 <label class="button">Choose picture
                     <input id="picture" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
                 </label>
+                <button type="button" id="edit-picture">✎ Edit picture</button>
                 <button type="button" id="remove-picture">Remove picture</button>
             </div>
         </div>
@@ -111,6 +112,31 @@
             <button type="submit" class="primary">Save</button>
         </div>
     </form>
+</dialog>
+
+<dialog id="photo">
+    <h2>Edit picture</h2>
+    <div id="photo-stage" class="photo-stage">
+        <div id="photo-frame" class="photo-frame">
+            <canvas id="photo-canvas"></canvas>
+            <div id="crop" class="crop">
+                <span class="handle nw" data-mode="nw"></span>
+                <span class="handle ne" data-mode="ne"></span>
+                <span class="handle sw" data-mode="sw"></span>
+                <span class="handle se" data-mode="se"></span>
+            </div>
+        </div>
+    </div>
+    <p class="muted hint">Drag the corners to crop, drag inside the frame to move it.</p>
+    <div class="photo-tools">
+        <button type="button" id="photo-rotate">↻ Rotate</button>
+        <button type="button" id="photo-reset">Reset</button>
+    </div>
+    <div class="actions">
+        <span class="spacer"></span>
+        <button type="button" id="photo-cancel">Cancel</button>
+        <button type="button" id="photo-done" class="primary">Use picture</button>
+    </div>
 </dialog>
 
 <dialog id="categories">

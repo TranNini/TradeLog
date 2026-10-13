@@ -12,6 +12,7 @@ let options = {categories: [], places: []}; // what was entered before, offered 
 let editing = null; // the item open in the editor, or null when adding a new one
 let adding = false; // the editor was opened with "Add item" (stays true if saving needs a second try)
 let pendingPicture = null; // picture chosen in the editor, uploaded on save
+let pendingPhoto = null; // how pendingPicture was rotated and cropped, so editing it again starts from the original
 let removePicture = false;
 
 // ---------- helpers ----------
@@ -212,6 +213,7 @@ function openEditor(item) {
     editing = item;
     adding = !item;
     pendingPicture = null;
+    pendingPhoto = null;
     removePicture = false;
 
     const form = $("item-form");
@@ -242,6 +244,7 @@ function updatePlaceLabel() {
 function showPreview(url) {
     setThumb($("preview"), url);
     $("remove-picture").hidden = !url;
+    $("edit-picture").hidden = !url;
 }
 
 function showFormError(message) {
@@ -298,6 +301,157 @@ async function deleteItem() {
         showFormError(error.message);
     }
 }
+
+// ---------- picture editor ----------
+
+const MAX_EDIT_PIXELS = 3000; // the photo is edited at this size at most, the result is MAX_PICTURE_PIXELS at most
+const MIN_CROP = 0.1; // the crop frame is at least a tenth of the picture wide and high
+const WHOLE_PHOTO = {x: 0, y: 0, w: 1, h: 1};
+
+// The photo being edited: image = canvas with the photo as chosen, rotation = 0, 90, 180 or 270 degrees
+// clockwise, crop = the part kept, as fractions (0..1) of the rotated photo, turned = the rotated photo
+let photo = null;
+let photoDone = null; // resolves the promise of editPhoto
+let drag = null;
+
+async function loadPhoto(blob) {
+    const bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, MAX_EDIT_PIXELS / Math.max(bitmap.width, bitmap.height));
+    const canvas = el("canvas", {
+        width: Math.round(bitmap.width * scale),
+        height: Math.round(bitmap.height * scale),
+    });
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    return canvas;
+}
+
+// Shows the picture editor; resolves to {file, photo} with "Use picture", null with "Cancel"
+function editPhoto(start) {
+    photo = {...start, crop: {...start.crop}};
+    $("photo").showModal();
+    drawPhoto();
+    return new Promise((resolve) => photoDone = resolve);
+}
+
+function turn(image, rotation) {
+    const sideways = rotation % 180 !== 0;
+    const canvas = el("canvas", {
+        width: sideways ? image.height : image.width,
+        height: sideways ? image.width : image.height,
+    });
+    const context = canvas.getContext("2d");
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate(rotation * Math.PI / 180);
+    context.drawImage(image, -image.width / 2, -image.height / 2);
+    return canvas;
+}
+
+// Fits the rotated photo into the dialog
+function drawPhoto() {
+    photo.turned = turn(photo.image, photo.rotation);
+    const {width, height} = photo.turned;
+    const scale = Math.min($("photo-stage").clientWidth / width, window.innerHeight * 0.55 / height);
+    const canvas = $("photo-canvas");
+    canvas.width = Math.round(width * scale * devicePixelRatio);
+    canvas.height = Math.round(height * scale * devicePixelRatio);
+    canvas.style.width = $("photo-frame").style.width = Math.round(width * scale) + "px";
+    canvas.style.height = $("photo-frame").style.height = Math.round(height * scale) + "px";
+    canvas.getContext("2d").drawImage(photo.turned, 0, 0, canvas.width, canvas.height);
+    showCrop();
+}
+
+function showCrop() {
+    const {x, y, w, h} = photo.crop;
+    Object.assign($("crop").style, {left: x * 100 + "%", top: y * 100 + "%", width: w * 100 + "%", height: h * 100 + "%"});
+}
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+// mode = move, or the corner being dragged: nw, ne, sw or se
+function moveCrop(mode, dx, dy, start) {
+    let {x, y, w, h} = start;
+    if (mode === "move") {
+        x = clamp(x + dx, 0, 1 - w);
+        y = clamp(y + dy, 0, 1 - h);
+    }
+    if (mode.includes("w")) {
+        const left = clamp(x + dx, 0, x + w - MIN_CROP);
+        w = x + w - left;
+        x = left;
+    }
+    if (mode.includes("e")) w = clamp(w + dx, MIN_CROP, 1 - x);
+    if (mode.includes("n")) {
+        const top = clamp(y + dy, 0, y + h - MIN_CROP);
+        h = y + h - top;
+        y = top;
+    }
+    if (mode.includes("s")) h = clamp(h + dy, MIN_CROP, 1 - y);
+    return {x, y, w, h};
+}
+
+// The cropped photo as a JPEG of at most MAX_PICTURE_PIXELS
+async function photoFile() {
+    const {turned, crop} = photo;
+    const sx = crop.x * turned.width, sy = crop.y * turned.height;
+    const sw = crop.w * turned.width, sh = crop.h * turned.height;
+    const scale = Math.min(1, MAX_PICTURE_PIXELS / Math.max(sw, sh));
+    const canvas = el("canvas", {width: Math.round(sw * scale), height: Math.round(sh * scale)});
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ffffff"; // JPEG has no transparency
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(turned, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    const jpeg = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    return new File([jpeg], "picture.jpg", {type: "image/jpeg"});
+}
+
+$("crop").addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    drag = {mode: event.target.dataset.mode ?? "move", x: event.clientX, y: event.clientY, crop: photo.crop};
+    $("crop").setPointerCapture(event.pointerId);
+});
+
+$("crop").addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const frame = $("photo-frame").getBoundingClientRect();
+    photo.crop = moveCrop(drag.mode, (event.clientX - drag.x) / frame.width, (event.clientY - drag.y) / frame.height,
+        drag.crop);
+    showCrop();
+});
+
+for (const type of ["pointerup", "pointercancel"]) {
+    $("crop").addEventListener(type, () => drag = null);
+}
+
+// Clockwise; the crop frame turns along
+$("photo-rotate").addEventListener("click", () => {
+    const {x, y, w, h} = photo.crop;
+    photo.rotation = (photo.rotation + 90) % 360;
+    photo.crop = {x: 1 - y - h, y: x, w: h, h: w};
+    drawPhoto();
+});
+
+$("photo-reset").addEventListener("click", () => {
+    photo.rotation = 0;
+    photo.crop = WHOLE_PHOTO;
+    drawPhoto();
+});
+
+$("photo-cancel").addEventListener("click", () => $("photo").close());
+
+$("photo-done").addEventListener("click", async () => {
+    const done = photoDone;
+    photoDone = null;
+    const {image, rotation, crop} = photo;
+    done({file: await photoFile(), photo: {image, rotation, crop}});
+    $("photo").close();
+});
+
+// Cancel, or Escape
+$("photo").addEventListener("close", () => {
+    photoDone?.(null);
+    photoDone = null;
+});
 
 // ---------- categories ----------
 
@@ -406,13 +560,46 @@ $("category-choice").addEventListener("change",
     () => choiceChanged($("category-choice"), $("item-form").elements.category));
 $("delete").addEventListener("click", deleteItem);
 
-$("picture").addEventListener("change", (event) => {
+$("picture").addEventListener("change", async (event) => {
     const file = event.target.files[0];
+    event.target.value = ""; // so choosing the same picture again works
     if (!file) return;
+    let image;
+    try {
+        image = await loadPhoto(file);
+    } catch (error) {
+        // e.g. a HEIC photo on a browser that can't show it: used as it is, the server says whether it's OK
+        pendingPicture = file;
+        pendingPhoto = null;
+        removePicture = false;
+        showPreview(URL.createObjectURL(file));
+        return;
+    }
+    const edited = await editPhoto({image, rotation: 0, crop: WHOLE_PHOTO});
+    if (edited) usePhoto(edited);
+});
+
+$("edit-picture").addEventListener("click", async () => {
+    let photo = pendingPicture && pendingPhoto;
+    if (!photo) {
+        try {
+            const picture = pendingPicture ?? await (await fetch(editing.imageUrl)).blob();
+            photo = {image: await loadPhoto(picture), rotation: 0, crop: WHOLE_PHOTO};
+        } catch (error) {
+            showFormError("This picture can't be edited here.");
+            return;
+        }
+    }
+    const edited = await editPhoto(photo);
+    if (edited) usePhoto(edited);
+});
+
+function usePhoto({file, photo}) {
     pendingPicture = file;
+    pendingPhoto = photo;
     removePicture = false;
     showPreview(URL.createObjectURL(file));
-});
+}
 
 $("remove-picture").addEventListener("click", () => {
     pendingPicture = null;
