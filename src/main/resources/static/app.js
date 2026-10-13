@@ -9,7 +9,7 @@ const SUPPORTED_PICTURES = ["image/jpeg", "image/png", "image/gif", "image/webp"
 
 const TYPE_NAMES = {SOLD: "Sold", BOUGHT: "Bought", FOR_SALE: "For sale"};
 
-let filter = {type: "", category: "", q: "", sort: "newest"};
+let filter = {type: "", category: "", place: "", q: "", sort: "newest"};
 let options = {categories: [], places: []}; // what was entered before, offered in the editor's dropdowns
 let editing = null; // the item open in the editor, or null when adding a new one
 let adding = false; // the editor was opened with "Add item" (stays true if saving needs a second try)
@@ -105,6 +105,7 @@ async function loadItems() {
     const params = new URLSearchParams();
     if (filter.type) params.set("type", filter.type);
     if (filter.category) params.set("category", filter.category);
+    if (filter.place) params.set("place", filter.place);
     if (filter.q) params.set("q", filter.q);
     if (filter.sort !== "newest") params.set("sort", filter.sort);
     const {items, totals} = await api("GET", "/api/items?" + params);
@@ -124,6 +125,7 @@ function showTotals(totals) {
 
     const parts = [];
     if (filter.category) parts.push(`in “${filter.category}”`);
+    if (filter.place) parts.push(`at “${filter.place}”`);
     if (filter.q) parts.push(`matching “${filter.q}”`);
     $("scope").hidden = parts.length === 0;
     $("scope").textContent = "Totals for items " + parts.join(" ");
@@ -133,7 +135,7 @@ function showItems(items) {
     const list = $("list");
     list.replaceChildren(...items.map(itemRow));
 
-    const filtered = filter.type || filter.category || filter.q;
+    const filtered = filter.type || filter.category || filter.place || filter.q;
     $("empty").hidden = items.length > 0;
     $("empty").textContent = filtered
         ? "No items match your filters."
@@ -166,19 +168,22 @@ function itemRow(item) {
     return row;
 }
 
-// Fills the category filter; the editor's dropdowns are filled when it opens
+// Fills the category and place filters; the editor's dropdowns are filled when it opens
 async function loadOptions() {
     options = await api("GET", "/api/options");
-    const {categories} = options;
+    fillFilter("category", options.categories, "All categories");
+    fillFilter("place", options.places, "All places");
+}
 
-    if (filter.category && !categories.some((c) => c.toLowerCase() === filter.category.toLowerCase())) {
-        filter.category = ""; // its last item was changed or deleted
-    }
-    $("category-filter").replaceChildren(
-        el("option", {value: "", textContent: "All categories"}),
-        ...categories.map((c) => el("option", {value: c, textContent: c})),
+// key = "category" or "place": the filter value and the dropdown #<key>-filter
+function fillFilter(key, values, allLabel) {
+    // the spelling in the list ("" when its last item was changed or deleted)
+    filter[key] = values.find((v) => v.toLowerCase() === filter[key].toLowerCase()) ?? "";
+    $(key + "-filter").replaceChildren(
+        el("option", {value: "", textContent: allLabel}),
+        ...values.map((v) => el("option", {value: v, textContent: v})),
         el("option", {value: EDIT_CATEGORIES, textContent: "✎ Edit categories & places…"}));
-    $("category-filter").value = filter.category;
+    $(key + "-filter").value = filter[key];
 }
 
 async function refresh() {
@@ -231,7 +236,8 @@ function openEditor(item) {
     form.elements.name.value = item?.name ?? "";
     form.elements.price.value = item ? priceText(item.price) : "";
     form.elements.date.value = item?.date ?? ""; // stays empty unless a month is picked
-    fillChoice($("place-choice"), form.elements.place, options.places, item?.place, "＋ New place…");
+    fillChoice($("place-choice"), form.elements.place, options.places,
+        item ? item.place : (filter.place || null), "＋ New place…");
     fillChoice($("category-choice"), form.elements.category, options.categories,
         item ? item.category : (filter.category || null), "＋ New category…");
     form.elements.notes.value = item?.notes ?? "";
@@ -528,8 +534,8 @@ async function changeChoice(kind, choice, to) {
         } else {
             await api("PUT", kind.url, {from: choice.name, to});
         }
-        if (kind.what === "category" && filter.category.toLowerCase() === choice.name.toLowerCase()) {
-            filter.category = to ?? ""; // keep showing the renamed category
+        if (filter[kind.what].toLowerCase() === choice.name.toLowerCase()) {
+            filter[kind.what] = to ?? ""; // keep showing the renamed category or place
         }
         $("categories-error").hidden = true;
         await showCategories();
@@ -552,15 +558,17 @@ $("type-filter").addEventListener("click", (event) => {
     loadItems().catch((error) => alert(error.message));
 });
 
-$("category-filter").addEventListener("change", (event) => {
-    if (event.target.value === EDIT_CATEGORIES) {
-        event.target.value = filter.category;
-        openCategories().catch((error) => alert(error.message));
-        return;
-    }
-    filter.category = event.target.value;
-    loadItems().catch((error) => alert(error.message));
-});
+for (const key of ["category", "place"]) {
+    $(key + "-filter").addEventListener("change", (event) => {
+        if (event.target.value === EDIT_CATEGORIES) {
+            event.target.value = filter[key];
+            openCategories().catch((error) => alert(error.message));
+            return;
+        }
+        filter[key] = event.target.value;
+        loadItems().catch((error) => alert(error.message));
+    });
+}
 
 $("sort").addEventListener("change", (event) => {
     filter.sort = event.target.value;

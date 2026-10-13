@@ -248,6 +248,12 @@ class ItemControllerTest {
                                 """))
                 .andExpect(status().isNotFound());
 
+        mvc.perform(get("/api/items").param("place", "vinted.DE"))
+                .andExpect(jsonPath("$.items", hasSize(2)))
+                .andExpect(jsonPath("$.totals.sold").value(22.00));
+        mvc.perform(get("/api/items").param("place", "eBay"))
+                .andExpect(jsonPath("$.items", hasSize(0)));
+
         mvc.perform(delete("/api/places").param("name", "Vinted.de")).andExpect(status().isNoContent());
         mvc.perform(get("/api/places")).andExpect(jsonPath("$", hasSize(0)));
         mvc.perform(get("/api/items")).andExpect(jsonPath("$.items", hasSize(2)));

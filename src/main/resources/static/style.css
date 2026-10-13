@@ -640,8 +640,8 @@ dialog h2 {
         font-size: 1.2rem;
     }
 
-    /* sold / bought on the first line, category and sort on the second, the search bar below */
-    .filters .segmented, .filters input[type=search] {
+    /* the types on the first line, category and place on the second, then sort and the search bar */
+    .filters .segmented, .filters input[type=search], .filters #sort {
         flex-basis: 100%;
     }
 
@@ -650,7 +650,8 @@ dialog h2 {
     }
 
     .filters select {
-        flex: 1;
+        flex: 1 1 0;
+        min-width: 0;
         max-width: none;
     }
 }

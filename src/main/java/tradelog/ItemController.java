@@ -94,17 +94,19 @@ public class ItemController {
         }
     }
 
-    // type = null for sold and bought; category = "" for all; q = search text, "" for no search;
+    // type = null for all types; category and place = "" for all; q = search text, "" for no search;
     // sort = newest, oldest, price-desc or price-asc.
-    // The totals add up the items in the category and search, whatever the type, so both sums
+    // The totals add up the items in the category, place and search, whatever the type, so both sums
     // stay visible when only sold or only bought items are listed.
     @GetMapping("/items")
     public ItemList list(@RequestParam(required = false) ItemType type,
                          @RequestParam(defaultValue = "") String category,
+                         @RequestParam(defaultValue = "") String place,
                          @RequestParam(defaultValue = "") String q,
                          @RequestParam(defaultValue = "newest") String sort) {
         List<Item> matching = items.findAll().stream()
                 .filter(item -> category.isBlank() || category.equalsIgnoreCase(item.category()))
+                .filter(item -> place.isBlank() || place.equalsIgnoreCase(item.place()))
                 .filter(item -> matches(item, q))
                 .toList();
         List<ItemDto> shown = matching.stream()
