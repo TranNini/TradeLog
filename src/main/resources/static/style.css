@@ -585,17 +585,40 @@ dialog h2 {
     margin: 0;
 }
 
+/* only the picture, in the middle of the screen: the dialog is a transparent full-screen layer */
 #viewer {
-    width: auto;
-    max-width: calc(100vw - 32px);
-    padding: 0;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 16px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: hidden;
+    outline: none;
     cursor: zoom-out;
+}
+
+#viewer[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#viewer::backdrop {
+    background: rgb(0 0 0 / 0.8);
 }
 
 #viewer img {
     display: block;
     max-width: 100%;
-    max-height: calc(100vh - 64px);
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
 }
 
 @media (max-width: 560px) {
