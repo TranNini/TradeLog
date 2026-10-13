@@ -245,6 +245,10 @@ function openEditor(item) {
     showPreview(item?.imageUrl);
 
     $("editor").showModal();
+    // start at the top: browsers put the cursor in the first field (on the iPhone that opens the keyboard and
+    // scrolls down to it), and the window would keep where it was scrolled to last time
+    document.activeElement?.blur();
+    $("editor").scrollTop = 0;
 }
 
 function updateTypeLabels() {
