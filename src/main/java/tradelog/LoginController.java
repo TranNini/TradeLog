@@ -21,8 +21,9 @@ public class LoginController {
         if (!accessCode.tryLogin(code)) {
             return "redirect:/login.html?wrong";
         }
-        ResponseCookie cookie = ResponseCookie.from(AccessFilter.COOKIE, accessCode.getCode())
+        ResponseCookie cookie = ResponseCookie.from(AccessFilter.COOKIE, accessCode.getCookieKey())
                 .httpOnly(true)
+                .secure(true) // only sent over HTTPS (https://tradelog.kulose.de); localhost counts as secure too
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ofDays(365))

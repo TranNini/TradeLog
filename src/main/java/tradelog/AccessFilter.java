@@ -55,7 +55,7 @@ public class AccessFilter extends OncePerRequestFilter {
             return false;
         }
         for (Cookie cookie : request.getCookies()) {
-            if (cookie.getName().equals(COOKIE) && accessCode.matches(cookie.getValue())) {
+            if (cookie.getName().equals(COOKIE) && accessCode.matchesCookie(cookie.getValue())) {
                 return true;
             }
         }
