@@ -15,6 +15,7 @@ target/
 ### App data: the database and the pictures ###
 tradelog.db
 images/
+backups/
 
 ### Web app access code ###
 access-code.txt

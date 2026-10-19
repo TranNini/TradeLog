@@ -35,6 +35,7 @@ class AccessFilterTest {
         registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + dataDir.resolve("test.db"));
         registry.add("tradelog.images-dir", () -> dataDir.resolve("images").toString());
         registry.add("tradelog.access-code-file", () -> dataDir.resolve("access-code.txt").toString());
+        registry.add("tradelog.backup-dir", () -> dataDir.resolve("backups").toString());
     }
 
     @Autowired
