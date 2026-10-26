@@ -164,6 +164,16 @@ function itemRow(item) {
         el("div", {className: "price"},
             el("span", {className: "badge " + item.type, textContent: TYPE_NAMES[item.type]}),
             money.format(item.price)));
+    if (item.type === "FOR_SALE") {
+        // opens the item already marked as sold, so the price it went for can be changed before saving
+        const sold = el("button", {type: "button", className: "sold-button", textContent: "✓ Sold"});
+        sold.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openEditor(item);
+            markSold();
+        });
+        row.querySelector(".price").append(sold);
+    }
     row.addEventListener("click", () => openEditor(item));
     return row;
 }
