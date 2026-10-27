@@ -157,7 +157,7 @@ input:focus, select:focus, textarea:focus {
     text-align: left;
 }
 
-/* the picked card (the list shows only its items) gets a ring in its own color */
+/* the picked card (Balance when all items are shown) gets a ring in its own color */
 .total[aria-pressed=true] {
     outline: 3px solid currentColor;
     outline-offset: 2px;

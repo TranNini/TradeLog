@@ -116,7 +116,7 @@ async function loadItems() {
     }
     showTotals(totals);
     for (const card of $("type-filter").children) {
-        card.setAttribute("aria-pressed", String(filter.type !== "" && card.dataset.type === filter.type));
+        card.setAttribute("aria-pressed", String(card.dataset.type === filter.type)); // Balance: all items
     }
     showItems(items);
 }
