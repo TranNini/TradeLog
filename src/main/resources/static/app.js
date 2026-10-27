@@ -109,7 +109,15 @@ async function loadItems() {
     if (filter.q) params.set("q", filter.q);
     if (filter.sort !== "newest") params.set("sort", filter.sort);
     const {items, totals} = await api("GET", "/api/items?" + params);
+    if (filter.type === "FOR_SALE" && totals.forSaleCount === 0) {
+        // the last item for sale was sold or deleted, and its card disappears: show all items instead
+        filter.type = "";
+        return loadItems();
+    }
     showTotals(totals);
+    for (const card of $("type-filter").children) {
+        card.setAttribute("aria-pressed", String(filter.type !== "" && card.dataset.type === filter.type));
+    }
     showItems(items);
 }
 
@@ -565,10 +573,9 @@ async function changeChoice(kind, choice, to) {
 $("add").addEventListener("click", () => openEditor(null));
 
 $("type-filter").addEventListener("click", (event) => {
-    const button = event.target.closest("button");
-    if (!button) return;
-    filter.type = button.dataset.type;
-    for (const b of $("type-filter").children) b.classList.toggle("active", b === button);
+    const card = event.target.closest("button");
+    if (!card) return;
+    filter.type = card.dataset.type === filter.type ? "" : card.dataset.type;
     loadItems().catch((error) => alert(error.message));
 });
 

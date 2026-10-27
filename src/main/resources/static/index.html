@@ -19,37 +19,32 @@
 </header>
 
 <main>
-    <section class="totals">
-        <div class="total sold">
+    <!-- the cards are also the type filter: a card shows only its items, Balance (or the picked card again) all -->
+    <section class="totals" id="type-filter">
+        <button class="total sold" data-type="SOLD" aria-pressed="false">
             <span class="label">Sold</span>
             <strong id="sold-sum">–</strong>
             <span id="sold-count" class="muted"></span>
-        </div>
-        <div class="total bought">
+        </button>
+        <button class="total bought" data-type="BOUGHT" aria-pressed="false">
             <span class="label">Bought</span>
             <strong id="bought-sum">–</strong>
             <span id="bought-count" class="muted"></span>
-        </div>
-        <div class="total balance">
+        </button>
+        <button class="total balance" data-type="" aria-pressed="false">
             <span class="label">Balance</span>
             <strong id="balance">–</strong>
             <span class="muted">sold − bought</span>
-        </div>
-        <div id="for-sale-card" class="total for-sale" hidden>
+        </button>
+        <button id="for-sale-card" class="total for-sale" data-type="FOR_SALE" aria-pressed="false" hidden>
             <span class="label">For sale</span>
             <strong id="for-sale-sum">–</strong>
             <span id="for-sale-count" class="muted"></span>
-        </div>
+        </button>
     </section>
     <p id="scope" class="scope muted" hidden></p>
 
     <section class="filters">
-        <div class="segmented" id="type-filter">
-            <button data-type="" class="active">All</button>
-            <button data-type="SOLD">Sold</button>
-            <button data-type="BOUGHT">Bought</button>
-            <button data-type="FOR_SALE">For sale</button>
-        </div>
         <select id="category-filter" aria-label="Category">
             <option value="">All categories</option>
         </select>
